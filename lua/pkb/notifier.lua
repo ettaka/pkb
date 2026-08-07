@@ -7,16 +7,29 @@ local M = {}
 ---------------------------------------------------------------
 -- CONFIG
 ---------------------------------------------------------------
-M.DEVICE_IS_PHONE = false
-if DEVICE_IS_PHONE then
-  M.PKB_ROOT = "/data/data/com.termux/files/home/pkb"  -- <<< change this
-else
-  M.PKB_ROOT = "/home/eelis/pkb"  -- <<< change this to your vault/root
-end
-
 M.DEFAULT_NOTIFY = "15min"
 M.POLL_INTERVAL = 30000        -- Poll every 30 seconds (ms)
 M.SNOOZE_INTERVAL = 30 * 60    -- Auto-snooze for 30 minutes (seconds) when closed with [q]
+
+function M.setup(opts)
+  opts = opts or {}
+  if opts.pkb_root then
+    M.PKB_ROOT = opts.pkb_root
+  end
+  if opts.device_is_phone ~= nil then
+    M.DEVICE_IS_PHONE = opts.device_is_phone
+  end
+  if opts.default_notify then
+    M.DEFAULT_NOTIFY = opts.default_notify
+  end
+  if opts.poll_interval then
+    M.POLL_INTERVAL = opts.poll_interval
+  end
+  if opts.snooze_interval then
+    M.SNOOZE_INTERVAL = opts.snooze_interval
+  end
+end
+
 
 ---------------------------------------------------------------
 -- STATE
