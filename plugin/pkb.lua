@@ -1,5 +1,3 @@
-require("pkb").setup()
-
 vim.api.nvim_create_user_command("PKBNotify", function()
   require("pkb.notifier").notify()
 end, {})
