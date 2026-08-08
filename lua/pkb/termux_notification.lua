@@ -3,16 +3,7 @@
 ---------------------------------------------------------------
 local M = {}
 
-M.DEVICE_IS_PHONE = false
-
-function M.setup(opts)
-  opts = opts or {}
-  if opts.DEVICE_IS_PHONE ~= nil then
-    M.DEVICE_IS_PHONE = opts.DEVICE_IS_PHONE
-  end
-end
-
-function M.phone_notify_digest(due_entries)
+function M.phone_notify_digest(due_entries, device_is_phone)
   if #due_entries == 0 then return end
 
   local title = string.format("PKB Digest (%d Pending Task%s)", #due_entries, #due_entries > 1 and "s" or "")
@@ -26,7 +17,8 @@ function M.phone_notify_digest(due_entries)
     content = string.format("Next: %s\n(+ %d more task%s)", top_entry.line, #due_entries - 1, #due_entries > 2 and "s" or "")
   end
 
-  if M.DEVICE_IS_PHONE then
+    print("testing!")
+  if device_is_phone then
     vim.fn.jobstart({
       "termux-notification",
       "--id", "pkb_digest", -- Fixed ID prevents notification clutter

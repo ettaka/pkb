@@ -36,7 +36,6 @@ local parse_notify = parser.parse_notify
 local scan_dir = require("pkb.parser").scan_dir
 
 local termux_notification = require("pkb.termux_notification")
-termux_notification.setup({ DEVICE_IS_PHONE = M.DEVICE_IS_PHONE })
 phone_notify_digest = termux_notification.phone_notify_digest
 
 local show_next_popup = require("pkb.ui").show_next_popup
@@ -83,7 +82,7 @@ local function check_notifications()
     table.sort(pending_due, function(a, b) return a.due_ts < b.due_ts end)
 
     -- Send consolidated phone notification
-    phone_notify_digest(pending_due)
+    phone_notify_digest(pending_due, M.DEVICE_IS_PHONE)
 
     -- Queue for Neovim digest/popup
     for _, entry in ipairs(pending_due) do
