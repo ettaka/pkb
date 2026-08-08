@@ -1,6 +1,6 @@
 local M = {}
 
-function M.render_inbox(notifications, inbox_show_all, buf)
+function M.render_inbox_old(notifications, inbox_show_all, buf)
   local items = {}
 
   for _, n in pairs(notifications) do
@@ -34,6 +34,55 @@ function M.render_inbox(notifications, inbox_show_all, buf)
   end
 
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+end
+
+function M.render_inbox(notifications, inbox_show_all, buf)
+  local items = {}
+
+  for _, n in pairs(notifications) do
+    if not n.line:match("^%s*%- %[[xX]%]") then
+      if inbox_show_all or not n.dismissed then
+        table.insert(items, n)
+      end
+    end
+  end
+
+  table.sort(items, function(a, b)
+    return a.due_ts < b.due_ts
+  end)
+
+  local lines = {}
+  local current_date = nil
+
+  for _, n in ipairs(items) do
+    local item_date = os.date("%Y-%m-%d", n.due_ts)
+
+    if item_date ~= current_date then
+      current_date = item_date
+      if #lines > 0 then
+        table.insert(lines, "")
+      end
+      table.insert(lines, "## " .. current_date)
+    end
+
+    local status =
+      n.dismissed and "[x]" or
+      n.triggered and "[!]" or
+      "[ ]"
+
+    table.insert(lines,
+      string.format(
+        "%s %s | %s | due %s",
+        status,
+        n.line,
+        n.file,
+        os.date("%H:%M", n.due_ts)
+      )
+    )
+  end
+
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.bo[buf].filetype = "markdown"
 end
 
 return M
