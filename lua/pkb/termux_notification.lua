@@ -17,7 +17,6 @@ function M.phone_notify_digest(due_entries, device_is_phone)
     content = string.format("Next: %s\n(+ %d more task%s)", top_entry.line, #due_entries - 1, #due_entries > 2 and "s" or "")
   end
 
-    print("testing!")
   if device_is_phone then
     vim.fn.jobstart({
       "termux-notification",
