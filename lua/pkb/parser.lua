@@ -70,7 +70,6 @@ function M.parse_iso(ts)
 end
 
 function M.parse_notify(str)
-  print("str", str)
   local n = tonumber(str:match("(%d+)"))
   if not n then return 0 end
   if str:match("min") then return n * 60 end
@@ -121,7 +120,6 @@ local function scan_file(notifications, file, new_state)
 end
 
 function M.scan_dir(notifications, path, new_state)
-  print("path"..path)
   local handle = vim.loop.fs_scandir(path)
   if not handle then return end
 
