@@ -42,6 +42,7 @@ phone_notify_digest = termux_notification.phone_notify_digest
 local show_next_popup = require("pkb.ui").show_next_popup
 local phone_notify = require("pkb.termux_notification").phone_notify
 local render_inbox = require("pkb.render").render_inbox
+local get_notification_at_cursor = require("pkb.render").get_notification_at_cursor
 
 ---------------------------------------------------------------
 -- STATE
@@ -141,42 +142,16 @@ function M.inbox()
 
   -- d → dismiss
   vim.keymap.set("n", "d", function()
-    local idx = vim.fn.line(".")
-    local visible = {}
-
-    for _, n in pairs(M.notifications) do
-      if not n.line:match("^%s*%- %[[xX]%]") then
-        if M.inbox_show_all or not n.dismissed then
-          table.insert(visible, n)
-        end
-      end
-    end
-
-    table.sort(visible, function(a, b) return a.due_ts < b.due_ts end)
-
-    local n = visible[idx]
+    local n = get_notification_at_cursor(buf)
     if n then
       n.dismissed = true
-      render_inbox(M.notifications, M.inbox_show_all)
+      render_inbox(M.notifications, M.inbox_show_all, buf)
     end
   end, { buffer = buf })
 
   -- <CR> → open task
   vim.keymap.set("n", "<CR>", function()
-    local idx = vim.fn.line(".")
-    local visible = {}
-
-    for _, n in pairs(M.notifications) do
-      if not n.line:match("^%s*%- %[[xX]%]") then
-        if M.inbox_show_all or not n.dismissed then
-          table.insert(visible, n)
-        end
-      end
-    end
-
-    table.sort(visible, function(a, b) return a.due_ts < b.due_ts end)
-
-    local n = visible[idx]
+    local n = get_notification_at_cursor(buf)
     if not n then return end
 
     vim.cmd("edit " .. vim.fn.fnameescape(n.file))
