@@ -114,12 +114,12 @@ function M.notify()
   for _ in pairs(M.notifications) do count = count + 1 end
 
   start_timer()
-  check_notifications()
 
   print("PKB notifications rescanned: " .. count)
 end
 
 function M.inbox()
+  M.notify()
   local function get_notification_list()
     local list = {}
     for _, n in pairs(M.notifications) do
@@ -160,7 +160,7 @@ function M.inbox()
   -- t → toggle view
   vim.keymap.set("n", "t", function()
     M.inbox_show_all = not M.inbox_show_all
-    render_inbox(M.notifications, M.inbox_show_all)
+    render_inbox(M.notifications, M.inbox_show_all, buf)
   end, { buffer = buf })
 
   -- q → close

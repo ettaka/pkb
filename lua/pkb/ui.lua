@@ -74,7 +74,7 @@ function M.show_next_popup(popup_active, popup_queue, active_popups, snooz_inter
         vim.api.nvim_win_close(win, true)
       end
       popup_active = false
-      M.show_next_popup(popup_active, popup_queue)
+      M.show_next_popup(popup_active, popup_queue, active_popups, snooz_interval)
     end
 
     -- Keybindings
@@ -85,7 +85,7 @@ function M.show_next_popup(popup_active, popup_queue, active_popups, snooz_inter
         vim.cmd("edit " .. vim.fn.fnameescape(entry.file))
         vim.fn.search(vim.fn.escape(entry.line, "\\/.*$^~[]"), "W")
       else
-        M.inbox()
+        require("pkb.notifier").inbox()
       end
     end, { buffer = buf })
 
