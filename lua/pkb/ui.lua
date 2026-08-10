@@ -69,7 +69,28 @@ function M.show_next_popup(popup_active, popup_queue, active_popups, snooz_inter
 
     vim.api.nvim_set_current_win(win)
 
+    local augroup = vim.api.nvim_create_augroup("PKBPopupFocus_" .. win, { clear = true })
+    vim.api.nvim_create_autocmd("WinLeave", {
+      group = augroup,
+      callback = function()
+        if vim.api.nvim_win_is_valid(win) then
+          vim.schedule(function()
+            if vim.api.nvim_win_is_valid(win) then
+              vim.api.nvim_set_current_win(win)
+            end
+          end)
+        end
+      end,
+    })
+
     local function close_popup()
+      pcall(vim.api.nvim_del_augroup_by_id, augroup)
+      for i, w in ipairs(active_popups) do
+        if w == win then
+          table.remove(active_popups, i)
+          break
+        end
+      end
       if vim.api.nvim_win_is_valid(win) then
         vim.api.nvim_win_close(win, true)
       end
@@ -77,16 +98,32 @@ function M.show_next_popup(popup_active, popup_queue, active_popups, snooz_inter
       M.show_next_popup(popup_active, popup_queue, active_popups, snooz_interval)
     end
 
+    local function close_all_popups()
+      pcall(vim.api.nvim_del_augroup_by_id, augroup)
+      for _, w in ipairs(active_popups) do
+        if vim.api.nvim_win_is_valid(w) then
+          vim.api.nvim_win_close(w, true)
+        end
+      end
+      for _ = 1, #active_popups do
+        table.remove(active_popups, 1)
+      end
+      popup_active = false
+    end
+
     -- Keybindings
     vim.keymap.set("n", "<CR>", function()
-      close_popup()
-      if #batch == 1 then
-        local entry = batch[1]
-        vim.cmd("edit " .. vim.fn.fnameescape(entry.file))
-        vim.fn.search(vim.fn.escape(entry.line, "\\/.*$^~[]"), "W")
-      else
-        require("pkb.notifier").inbox()
-      end
+      local is_single = (#batch == 1)
+      local entry = batch[1]
+      close_all_popups()
+      vim.schedule(function()
+        if is_single then
+          vim.cmd("edit " .. vim.fn.fnameescape(entry.file))
+          vim.fn.search(vim.fn.escape(entry.line, "\\/.*$^~[]"), "W")
+        else
+          require("pkb.notifier").inbox()
+        end
+      end)
     end, { buffer = buf })
 
     vim.keymap.set("n", "d", function()
