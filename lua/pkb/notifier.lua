@@ -62,12 +62,14 @@ local function check_notifications()
   local pending_due = {}
 
   for _, entry in pairs(M.notifications) do
-    -- Filter out completed markdown checkmarks
+    -- Filter out completed markdown checkmarks.
     local is_done = entry.line:match("^%s*%- %[[xX]%]")
 
     if not is_done and not entry.dismissed then
       local is_due = now >= entry.notify_ts
-      local snooze_expired = not entry.auto_snoozed_until or (now >= entry.auto_snoozed_until)
+      local snooze_expired =
+        not entry.auto_snoozed_until
+        or now >= entry.auto_snoozed_until
 
       if is_due and snooze_expired then
         entry.auto_snoozed_until = nil
@@ -77,19 +79,28 @@ local function check_notifications()
     end
   end
 
-  if #pending_due > 0 then
-    -- Sort by due timestamp
-    table.sort(pending_due, function(a, b) return a.due_ts < b.due_ts end)
-
-    -- Send consolidated phone notification
-    phone_notify_digest(pending_due, M.DEVICE_IS_PHONE)
-
-    -- Queue for Neovim digest/popup
-    for _, entry in ipairs(pending_due) do
-      table.insert(M.popup_queue, entry)
-    end
-    show_next_popup(M.popup_active, M.popup_queue, M.active_popups, M.SNOOZE_INTERVAL)
+  if #pending_due == 0 then
+    return
   end
+
+  -- Sort newly triggered notifications by due timestamp.
+  table.sort(pending_due, function(a, b)
+    return a.due_ts < b.due_ts
+  end)
+
+  -- Send consolidated phone notification.
+  phone_notify_digest(pending_due, M.DEVICE_IS_PHONE)
+
+  -- Add newly triggered notifications to the Neovim queue.
+  --
+  -- If a digest is already visible, show_next_popup() will append
+  -- these to the existing digest rather than creating another popup.
+  for _, entry in ipairs(pending_due) do
+    table.insert(M.popup_queue, entry)
+  end
+
+  -- Show the digest, or update the existing one.
+  show_next_popup(M.popup_queue, M.SNOOZE_INTERVAL)
 end
 
 local function start_timer()
