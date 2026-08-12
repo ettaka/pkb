@@ -27,10 +27,6 @@ local function get_effort_seconds(n)
   -- Extract number and unit.
   local value, unit = effort:match("^([%d%.]+)(%a+)")
 
-  print("EFFORT TAG:", vim.inspect(effort))
-  print("VALUE:", vim.inspect(value))
-  print("UNIT:", vim.inspect(unit))
-
   if not value or not unit then
     return 0
   end
