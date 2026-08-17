@@ -165,7 +165,9 @@ function M.inbox()
     if not n then return end
 
     vim.cmd("edit " .. vim.fn.fnameescape(n.file))
+    vim.api.nvim_win_set_cursor(0, {1, 0})
     vim.fn.search(vim.fn.escape(n.line, "\\/.*$^~[]"), "W")
+
   end, { buffer = buf })
 
   -- t → toggle view
