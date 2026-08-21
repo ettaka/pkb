@@ -112,6 +112,59 @@ local function start_timer()
   end
 end
 
+--- Completes a task by changing due:: -> old::, appending done::, and spawning the next instance if recurring.
+--- @param entry table Notification entry object
+function M.complete_task(entry)
+  if not entry or not entry.file or not entry.line_num then return end
+
+  local ok, lines = pcall(vim.fn.readfile, entry.file)
+  if not ok or not lines[entry.line_num] then return end
+
+  local original_line = lines[entry.line_num]
+  local due_str = original_line:match("due::([^%s]+)")
+  if not due_str then return end
+
+  local now_iso = os.date("%Y-%m-%dT%H:%MH")
+  local recur_str = parser.parse_recurrence(original_line)
+
+  -- 1. Transform current line: change due:: to old:: and append done::
+  local completed_line = original_line:gsub("due::" .. vim.pesc(due_str), "old::" .. due_str)
+  if recur_str then
+    -- Strip recur:: from completed log entry so history stays clean
+    completed_line = completed_line:gsub("%s*recur::" .. vim.pesc(recur_str), "")
+  end
+  completed_line = completed_line .. " done::" .. now_iso
+
+  lines[entry.line_num] = completed_line
+
+  -- 2. If task is recurring, calculate next due date and append new active task
+  if recur_str and entry.due_ts then
+    local next_ts = parser.calculate_next_due(entry.due_ts, recur_str)
+    local next_iso = os.date("%Y-%m-%dT%H:%MH", next_ts)
+
+    -- Construct new task line with next due date and original recur tag
+    local next_line = original_line:gsub("due::" .. vim.pesc(due_str), "due::" .. next_iso)
+    
+    -- Insert new line immediately after completed task
+    table.insert(lines, entry.line_num + 1, next_line)
+  end
+
+  -- Write changes back to file
+  vim.fn.writefile(lines, entry.file)
+
+  -- Reload current buffer if open in Neovim
+  local bufnr = vim.fn.bufnr(entry.file)
+  if bufnr ~= -1 and vim.api.nvim_buf_is_loaded(bufnr) then
+    vim.api.nvim_buf_call(bufnr, function()
+      vim.cmd("edit!")
+    end)
+  end
+
+  -- Mark as dismissed in memory and rescan
+  entry.dismissed = true
+  M.notify()
+end
+
 ---------------------------------------------------------------
 -- COMMANDS & PUBLIC API
 ---------------------------------------------------------------
@@ -179,6 +232,15 @@ function M.inbox()
   -- q → close
   vim.keymap.set("n", "q", function()
     vim.api.nvim_buf_delete(buf, { force = true })
+  end, { buffer = buf })
+
+  -- c → complete task (due:: -> old::, done::, + next recur)
+  vim.keymap.set("n", "c", function()
+    local n = get_notification_at_cursor(buf)
+    if n then
+      M.complete_task(n)
+      render_inbox(M.notifications, M.inbox_show_all, buf)
+    end
   end, { buffer = buf })
 end
 

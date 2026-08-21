@@ -136,4 +136,39 @@ function M.scan_dir(notifications, path, new_state)
   end
 end
 
+-- In lua/pkb/parser.lua
+
+--- Parse recur::<value> tag from line (e.g. recur::daily, recur::3d, recur::1w, recur::1m)
+--- @param line string
+--- @return string|nil
+function M.parse_recurrence(line)
+  line = tostring(line or "")
+  return line:match("recur::([%w]+)")
+end
+
+--- Calculate the next due epoch timestamp based on recur rule
+--- @param current_ts number Epoch timestamp
+--- @param recur_str string e.g. "3d", "daily", "1w", "1m"
+--- @return number Next epoch timestamp
+function M.calculate_next_due(current_ts, recur_str)
+  local num, unit = recur_str:match("^(%d*)(%a+)$")
+  num = tonumber(num) or 1
+
+  if unit == "daily" then unit = "d" end
+  if unit == "weekly" then unit = "w" end
+  if unit == "monthly" then unit = "m" end
+
+  local date_tbl = os.date("*t", current_ts)
+
+  if unit == "d" then
+    date_tbl.day = date_tbl.day + num
+  elseif unit == "w" then
+    date_tbl.day = date_tbl.day + (num * 7)
+  elseif unit == "m" then
+    date_tbl.month = date_tbl.month + num
+  end
+
+  return os.time(date_tbl)
+end
+
 return M
