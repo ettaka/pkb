@@ -3,7 +3,8 @@
 ---------------------------------------------------------------
 local M = {}
 
-local HOME_TZ = "+02:00"  -- your home timezone
+local parse_iso = require('timestamps.parser').parse_iso
+
 M.DEFAULT_NOTIFY = "15min"
 
 function M.setup(opts)
@@ -11,62 +12,6 @@ function M.setup(opts)
   if opts.default_notify then
     M.DEFAULT_NOTIFY = opts.default_notify
   end
-end
-
--- convert offset string to seconds
-local function offset_to_seconds(sign, hh, mm)
-  return (tonumber(hh)*60 + tonumber(mm)) * 60 * (sign == "-" and -1 or 1)
-end
-
-function M.parse_iso(ts)
-  local y,m,d,H,M_,suffix
-
-  y,m,d,H,M_,suffix = ts:match("(%d%d%d%d)%-(%d%d)%-(%d%d)T(%d%d):(%d%d)([ZH])")
-  if not y then
-    y,m,d,H,M_,suffix =
-      ts:match("(%d%d%d%d)%-(%d%d)%-(%d%d)T(%d%d):(%d%d)([%+%-]%d%d:%d%d)")
-  end
-
-  if not y then return nil end
-
-  local year  = tonumber(y)
-  local month = tonumber(m)
-  local day   = tonumber(d)
-  local hour  = tonumber(H)
-  local min   = tonumber(M_)
-
-  local offset = 0
-
-  if suffix == "Z" then
-    offset = 0
-  elseif suffix == "H" then
-    local sign, hh, mm = HOME_TZ:match("([%+%-])(%d%d):(%d%d)")
-    offset = offset_to_seconds(sign, hh, mm)
-  else
-    local sign, hh, mm = suffix:match("([%+%-])(%d%d):(%d%d)")
-    offset = offset_to_seconds(sign, hh, mm)
-  end
-
-  -- construct UTC time
-  local epoch = os.time({
-    year = year,
-    month = month,
-    day = day,
-    hour = hour,
-    min = min,
-    sec = 0,
-    isdst = false,
-  })
-
-  -- system offset at that specific time (handles DST correctly)
-  local local_offset = os.difftime(
-    os.time(os.date("*t", epoch)),
-    os.time(os.date("!*t", epoch))
-  )
-
-  epoch = epoch - offset + local_offset
-
-  return epoch
 end
 
 function M.parse_notify(str)
@@ -86,7 +31,7 @@ local function parse_line(notifications, line, line_num, file, new_state)
   if not due_str then return end
 
   local notify_str = line:match("notify::([%w]+)") or M.DEFAULT_NOTIFY
-  local due_ts = M.parse_iso(due_str)
+  local due_ts = parse_iso(due_str)
   if not due_ts then return end
 
   local notify_ts = due_ts - M.parse_notify(notify_str)

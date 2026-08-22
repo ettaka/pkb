@@ -31,8 +31,6 @@ end
 
 local parser = require("pkb.parser")
 parser.setup({ DEFAULT_NOTIFY = M.DEFAULT_NOTIFY })
-local parse_iso = parser.parse_iso
-local parse_notify = parser.parse_notify
 local scan_dir = require("pkb.parser").scan_dir
 
 local termux_notification = require("pkb.termux_notification")
@@ -124,7 +122,7 @@ function M.complete_task(entry)
   local due_str = original_line:match("due::([^%s]+)")
   if not due_str then return end
 
-  local now_iso = os.date("%Y-%m-%dT%H:%MH")
+  local now_iso = require('timestamps.actions').get_timestamp_now()
   local recur_str = parser.parse_recurrence(original_line)
 
   -- 1. Transform current line: change due:: to old:: and append done::
@@ -140,7 +138,7 @@ function M.complete_task(entry)
   -- 2. If task is recurring, calculate next due date and append new active task
   if recur_str and entry.due_ts then
     local next_ts = parser.calculate_next_due(entry.due_ts, recur_str)
-    local next_iso = os.date("%Y-%m-%dT%H:%MH", next_ts)
+    local next_iso = require('timestamps.actions').get_timestamp(next_ts)
 
     -- Construct new task line with next due date and original recur tag
     local next_line = original_line:gsub("due::" .. vim.pesc(due_str), "due::" .. next_iso)

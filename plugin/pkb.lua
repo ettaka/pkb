@@ -18,7 +18,7 @@ vim.api.nvim_create_user_command("PKBComplete", function()
     return
   end
 
-  local due_ts = parser.parse_iso(due_str)
+  local due_ts = require('timestamps.parser').parse_iso(due_str)
   local entry = {
     file = file,
     line_num = line_num,
